@@ -1,0 +1,20 @@
+{
+    "name": "thomas/phplox",
+    "description": "A PHP implementation of the Lox programming language from the book \"Crafting Interpreters\" from Robert \"Bob\" Nystrom.",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Thomas\\Phplox\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Thomas Meschke",
+            "email": "thomas.meschke@googlemail.com"
+        }
+    ],
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
+    }
+}
