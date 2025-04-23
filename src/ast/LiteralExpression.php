@@ -18,4 +18,14 @@ class LiteralExpression extends Expression
     {
         $this->value = $value;
     }
+
+    /**
+     * @template T
+     * @param IVisitor<T> $visitor
+     * @return T
+     */
+    public function accept(IVisitor $visitor) : mixed
+    {
+        return $visitor->visitLiteralExpression($this);
+    }
 }
