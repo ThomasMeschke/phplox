@@ -16,4 +16,14 @@ class UnaryExpression extends Expression
         $this->operator = $operator;
         $this->right = $right;
     }
+
+    /**
+     * @template T
+     * @param IVisitor<T> $visitor
+     * @return T
+     */
+    public function accept(IVisitor $visitor) : mixed
+    {
+        return $visitor->visitUnaryExpression($this);
+    }
 }

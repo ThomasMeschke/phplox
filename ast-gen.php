@@ -49,7 +49,11 @@ class ASTGenerator
         $baseTypeName = $typeDefinitionCollection->baseTypeName;
         $this->defineBaseType($outputDir, $baseTypeName);
 
-        foreach($typeDefinitionCollection->typeDefinitions as $typeDefinition)
+        $typeDefs = $typeDefinitionCollection->typeDefinitions;
+
+        $this->defineVisitorInterface($outputDir, $typeDefinitionCollection);
+
+        foreach($typeDefs as $typeDefinition)
         {
             $this->defineType($outputDir, $baseTypeName, $typeDefinition);
         }
@@ -75,20 +79,68 @@ class ASTGenerator
         $this->appendLineToFile($fileHandle);
         $this->appendLineToFile($fileHandle, "abstract class {$baseTypeName}");
         $this->appendLineToFile($fileHandle, "{");
-        $this->appendLineToFile($fileHandle);
+        $this->appendLineToFile($fileHandle, "    /**");
+        $this->appendLineToFile($fileHandle, "     * @template T");
+        $this->appendLineToFile($fileHandle, "     * @param IVisitor<T> \$visitor");
+        $this->appendLineToFile($fileHandle, "     * @return T");
+        $this->appendLineToFile($fileHandle, "     */");
+        $this->appendLineToFile($fileHandle, "    public abstract function accept(IVisitor \$visitor) : mixed;");
         $this->appendLineToFile($fileHandle, "}");
 
         fclose($fileHandle);
     }
 
+    private function defineVisitorInterface(string $outputDir, TypeDefinitionCollection $typeDefinitionCollection): void
+    {
+        $path = $outputDir . DIRECTORY_SEPARATOR . "IVisitor.php";
+        $fileHandle = fopen($path, 'w');
+
+        if ($fileHandle === false)
+        {
+            echo "Opening file for generation failed: '{$path}'";
+            exit (self::EX_IOERR);
+        }
+
+        /** @var resource $fileHandle */
+        $this->appendLineToFile($fileHandle, "<?php");
+        $this->appendLineToFile($fileHandle);
+        $this->appendLineToFile($fileHandle, "declare(strict_types=1);");
+        $this->appendLineToFile($fileHandle);
+        $this->appendLineToFile($fileHandle, "namespace thomas\\phplox\\src\\ast;");
+        $this->appendLineToFile($fileHandle);
+        $this->appendLineToFile($fileHandle, "/**");
+        $this->appendLineToFile($fileHandle, " * @template T");
+        $this->appendLineToFile($fileHandle, " */");
+        $this->appendLineToFile($fileHandle, "interface IVisitor");
+        $this->appendLineToFile($fileHandle, "{");
+
+        $baseTypeName = $typeDefinitionCollection->baseTypeName;
+        $typeDefinitions = $typeDefinitionCollection->typeDefinitions;
+
+        foreach($typeDefinitions as $type)
+        {
+            $typeName = $type->typeName . $baseTypeName;
+            $lowerTypeName = lcfirst($typeName);
+            $this->appendLineToFile($fileHandle, "    /**");
+            $this->appendLineToFile($fileHandle, "     * @return T");
+            $this->appendLineToFile($fileHandle, "     */");
+            $this->appendLineToFile($fileHandle, "    function visit{$typeName}({$typeName} \${$lowerTypeName}) : mixed;");
+        }
+
+        $this->appendLineToFile($fileHandle, "}");
+
+        fclose($fileHandle);
+
+    }
+
     /**
-     * @params array<string> $parameters
+     * @param array<string> $parameters
      */
     private function defineType(string $outputDir, string $baseTypeName, TypeDefinition $typeDefinition) : void
     {
-        $typeName = $typeDefinition->typeName;
+        $typeName = $typeDefinition->typeName.$baseTypeName;
 
-        $path = $outputDir . DIRECTORY_SEPARATOR . "{$typeName}{$baseTypeName}.php";
+        $path = $outputDir . DIRECTORY_SEPARATOR . "{$typeName}.php";
         $fileHandle = fopen($path, 'w');
 
         if ($fileHandle === false)
@@ -114,7 +166,7 @@ class ASTGenerator
         {
             $this->appendLineToFile($fileHandle);
         }
-        $this->appendLineToFile($fileHandle, "class {$typeName}{$baseTypeName} extends {$baseTypeName}");
+        $this->appendLineToFile($fileHandle, "class {$typeName} extends {$baseTypeName}");
         $this->appendLineToFile($fileHandle, "{");
 
         $this->appendLineToFile($fileHandle, $typeDefinition->fieldList());
@@ -124,6 +176,18 @@ class ASTGenerator
         $this->appendLineToFile($fileHandle, "    {");
         $this->appendLineToFile($fileHandle, $typeDefinition->assignmentList());
         $this->appendLineToFile($fileHandle, "    }");
+        $this->appendLineToFile($fileHandle);
+
+        $this->appendLineToFile($fileHandle, "    /**");
+        $this->appendLineToFile($fileHandle, "     * @template T");
+        $this->appendLineToFile($fileHandle, "     * @param IVisitor<T> \$visitor");
+        $this->appendLineToFile($fileHandle, "     * @return T");
+        $this->appendLineToFile($fileHandle, "     */");
+        $this->appendLineToFile($fileHandle, "    public function accept(IVisitor \$visitor) : mixed");
+        $this->appendLineToFile($fileHandle, "    {");
+        $this->appendLineToFile($fileHandle, "        return \$visitor->visit{$typeName}(\$this);");
+        $this->appendLineToFile($fileHandle, "    }");
+
         $this->appendLineToFile($fileHandle, "}");
 
         fclose($fileHandle);
