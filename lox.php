@@ -3,7 +3,12 @@
 declare(strict_types=1);
 require __DIR__ . '/vendor/autoload.php';
 
+use thomas\phplox\src\ast\Expression;
+use thomas\phplox\src\AstPrinter;
+use thomas\phplox\src\Parser;
 use thomas\phplox\src\Scanner;
+use thomas\phplox\src\Token;
+use thomas\phplox\src\TokenType;
 
 new Lox($argc, $argv);
 
@@ -72,15 +77,29 @@ class Lox
         $scanner = new Scanner($source);
         $tokens = $scanner->scanTokens();
 
-        foreach($tokens as $token)
-        {
-            echo $token->toString() . PHP_EOL;
-        }
+        $parser = new Parser($tokens);
+        $expression = $parser->parse();
+
+        if (self::$hadError) return;
+
+        echo (new AstPrinter())->print($expression);
     }
 
-    public static function error(int $line, string $message) : void
+    public static function lineError(int $line, string $message) : void
     {
         self::report($line, "", $message);
+    }
+
+    public static function tokenError(Token $token, string $message) : void
+    {
+        if ($token->type === TokenType::EOF)
+        {
+            self::report($token->line, "at end", $message);
+        }
+        else
+        {
+            self::report($token->line, "at '{$token->lexeme}'", $message);
+        };
     }
 
     private static function report(int $line, string $where, string $message) : void

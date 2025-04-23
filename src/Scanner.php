@@ -104,7 +104,7 @@ class Scanner
                 }
                 else
                 {
-                    Lox::error($this->line, "Unexpected character '{$char}'.");
+                    Lox::lineError($this->line, "Unexpected character '{$char}'.");
                 }
                 break;
         }
@@ -123,7 +123,7 @@ class Scanner
 
         if ($this->isAtEnd())
         {
-            Lox::error($this->line, "Unterminated string.");
+            Lox::lineError($this->line, "Unterminated string.");
             return;
         }
 
