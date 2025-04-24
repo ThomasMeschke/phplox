@@ -3,8 +3,9 @@
 declare(strict_types=1);
 require __DIR__ . '/vendor/autoload.php';
 
-use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\AstPrinter;
+use thomas\phplox\src\exceptions\RuntimeErrorException;
+use thomas\phplox\src\Interpreter;
 use thomas\phplox\src\Parser;
 use thomas\phplox\src\Scanner;
 use thomas\phplox\src\Token;
@@ -16,9 +17,12 @@ class Lox
 {
     private const EX_USAGE      = 64;
     private const EX_DATAERR    = 65;
+    private const EX_SOFTWARE   = 70;
     private const EX_IOERR      = 74;
 
+    private static Interpreter $interpreter;
     private static bool $hadError = false;
+    private static bool $hadRuntimeError = false;
 
     /**
      * @param array<string> $argv
@@ -33,13 +37,18 @@ class Lox
             echo "Usage: {$argv[0]} [script]" . PHP_EOL;
             exit(self::EX_USAGE);
         }
-        else if ($argc == 2)
-        {
-            $this->runFile($argv[1]);
-        }
         else
         {
-            $this->runPrompt();
+            self::$interpreter = new Interpreter();
+
+            if ($argc == 2)
+            {
+                $this->runFile($argv[1]);
+            }
+            else
+            {
+                $this->runPrompt();
+            }
         }
     }
 
@@ -54,10 +63,8 @@ class Lox
         $fileContents = file_get_contents($filePath);
         $this->run($fileContents);
 
-        if (self::$hadError)
-        {
-            exit(self::EX_DATAERR);
-        }
+        if (self::$hadError)        exit(self::EX_DATAERR);
+        if (self::$hadRuntimeError) exit(self::EX_SOFTWARE);
     }
 
     private function runPrompt() : void
@@ -82,7 +89,7 @@ class Lox
 
         if (self::$hadError) return;
 
-        echo (new AstPrinter())->print($expression);
+        self::$interpreter->interpret($expression);
     }
 
     public static function lineError(int $line, string $message) : void
@@ -100,6 +107,14 @@ class Lox
         {
             self::report($token->line, "at '{$token->lexeme}'", $message);
         };
+    }
+
+    public static function RuntimeError(RuntimeErrorException $error) : void
+    {
+        $message = $error->getMessage();
+        $line = $error->token->line;
+        echo "[line {$line}] Runtime Error: {$message}" . PHP_EOL;
+        self::$hadRuntimeError = true;
     }
 
     private static function report(int $line, string $where, string $message) : void
