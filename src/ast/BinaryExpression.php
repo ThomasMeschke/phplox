@@ -21,10 +21,10 @@ class BinaryExpression extends Expression
 
     /**
      * @template T
-     * @param IVisitor<T> $visitor
+     * @param IExpressionVisitor<T> $visitor
      * @return T
      */
-    public function accept(IVisitor $visitor) : mixed
+    public function accept(IExpressionVisitor $visitor) : mixed
     {
         return $visitor->visitBinaryExpression($this);
     }

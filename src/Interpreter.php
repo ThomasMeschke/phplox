@@ -9,15 +9,15 @@ use Lox;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\GroupingExpression;
-use thomas\phplox\src\ast\IVisitor;
+use thomas\phplox\src\ast\IExpressionVisitor;
 use thomas\phplox\src\ast\LiteralExpression;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 /**
- * @implements IVisitor<scalar|null>
+ * @implements IExpressionVisitor<scalar|null>
  */
-class Interpreter implements IVisitor
+class Interpreter implements IExpressionVisitor
 {
     public function interpret(Expression $expression) : void
     {

@@ -7,7 +7,7 @@ namespace thomas\phplox\src\ast;
 /**
  * @template T
  */
-interface IVisitor
+interface IExpressionVisitor
 {
     /**
      * @return T
