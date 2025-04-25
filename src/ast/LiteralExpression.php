@@ -6,9 +6,7 @@ namespace thomas\phplox\src\ast;
 
 class LiteralExpression extends Expression
 {
-    /**
-     * @var scalar|null $value
-     */
+    /** @var scalar|null $value */
     public mixed $value;
 
     /**
@@ -21,10 +19,10 @@ class LiteralExpression extends Expression
 
     /**
      * @template T
-     * @param IVisitor<T> $visitor
+     * @param IExpressionVisitor<T> $visitor
      * @return T
      */
-    public function accept(IVisitor $visitor) : mixed
+    public function accept(IExpressionVisitor $visitor) : mixed
     {
         return $visitor->visitLiteralExpression($this);
     }

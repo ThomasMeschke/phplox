@@ -8,8 +8,8 @@ abstract class Expression
 {
     /**
      * @template T
-     * @param IVisitor<T> $visitor
+     * @param IExpressionVisitor<T> $visitor
      * @return T
      */
-    public abstract function accept(IVisitor $visitor) : mixed;
+    public abstract function accept(IExpressionVisitor $visitor) : mixed;
 }
