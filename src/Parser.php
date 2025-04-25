@@ -7,14 +7,22 @@ namespace thomas\phplox\src;
 use Lox;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\Expression;
+use thomas\phplox\src\ast\ExpressionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
 use thomas\phplox\src\ast\LiteralExpression;
+use thomas\phplox\src\ast\PrintStatement;
+use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\exceptions\ParseException;
 use thomas\phplox\src\Token;
 
 /**
  * GRAMMAR:
+ *  program        → statement* EOF ;
+ *  statement      → exprStmt
+ *                 | printStmt ;
+ *  exprStmt       → expression ";" ;
+ *  printStmt      → "print" expression ";" ;
  *  expression     → equality ;
  *  equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  *  comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -40,16 +48,44 @@ class Parser
         $this->tokens = $tokens;
     }
 
-    public function parse() : ?Expression
+    /**
+     * @return array<Statement>
+     */
+    public function parse() : array
     {
-        try
+        /** @var array<Statement> $statements */
+        $statements = [];
+
+        while (! $this->isAtEnd())
         {
-            return $this->expression();
+            array_push($statements, $this->statement());
         }
-        catch (ParseException)
+
+        return $statements;
+    }
+
+    private function statement() : Statement
+    {
+        if ($this->match(TokenType::PRINT))
         {
-            return null;
+            return $this->printStatement();
         }
+
+        return $this->expressionStatement();
+    }
+
+    private function printStatement() : Statement
+    {
+        $value = $this->expression();
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after value.");
+        return new PrintStatement($value);
+    }
+
+    private function expressionStatement() : Statement
+    {
+        $expression = $this->expression();
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after expression.");
+        return new ExpressionStatement($expression);
     }
 
     private function expression() : Expression

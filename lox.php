@@ -85,11 +85,11 @@ class Lox
         $tokens = $scanner->scanTokens();
 
         $parser = new Parser($tokens);
-        $expression = $parser->parse();
+        $statements = $parser->parse();
 
         if (self::$hadError) return;
 
-        self::$interpreter->interpret($expression);
+        self::$interpreter->interpret($statements);
     }
 
     public static function lineError(int $line, string $message) : void

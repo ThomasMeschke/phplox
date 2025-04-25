@@ -8,23 +8,33 @@ use DivisionByZeroError;
 use Lox;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\Expression;
+use thomas\phplox\src\ast\ExpressionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
 use thomas\phplox\src\ast\IExpressionVisitor;
+use thomas\phplox\src\ast\IStatementVisitor;
 use thomas\phplox\src\ast\LiteralExpression;
+use thomas\phplox\src\ast\PrintStatement;
+use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 /**
  * @implements IExpressionVisitor<scalar|null>
+ * @implements IStatementVisitor<null>
  */
-class Interpreter implements IExpressionVisitor
+class Interpreter implements IExpressionVisitor, IStatementVisitor
 {
-    public function interpret(Expression $expression) : void
+    /**
+     * @param array<Statement> $statements
+     */
+    public function interpret(array $statements) : void
     {
         try
         {
-            $value = $this->evaluate($expression);
-            echo $this->stringify($value) . PHP_EOL;
+            foreach($statements as $statement)
+            {
+                $this->execute($statement);
+            }
         }
         catch (RuntimeErrorException $error)
         {
@@ -33,9 +43,28 @@ class Interpreter implements IExpressionVisitor
     }
 
     /**
+     * @return null
+     */
+    public function visitExpressionStatement(ExpressionStatement $expressionStatement) : mixed
+    {
+        $this->evaluate($expressionStatement->expression);
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function visitPrintStatement(PrintStatement $printStatement) : mixed
+    {
+        $value = $this->evaluate($printStatement->expression);
+        echo $this->stringify($value) . PHP_EOL;
+        return null;
+    }
+
+    /**
      * @return scalar|null
      */
-    public function visitBinaryExpression(BinaryExpression $binaryExpression): mixed
+    public function visitBinaryExpression(BinaryExpression $binaryExpression) : mixed
     {
         $left = $this->evaluate($binaryExpression->left);
         $right = $this->evaluate($binaryExpression->right);
@@ -103,7 +132,7 @@ class Interpreter implements IExpressionVisitor
     /**
      * @return scalar|null
      */
-    public function visitGroupingExpression(GroupingExpression $groupingExpression): mixed
+    public function visitGroupingExpression(GroupingExpression $groupingExpression) : mixed
     {
         return $this->evaluate($groupingExpression->expression);
     }
@@ -111,7 +140,7 @@ class Interpreter implements IExpressionVisitor
     /**
      * @return scalar|null
      */
-    public function visitLiteralExpression(LiteralExpression $literalExpression): mixed
+    public function visitLiteralExpression(LiteralExpression $literalExpression) : mixed
     {
         return $literalExpression->value;
     }
@@ -119,7 +148,7 @@ class Interpreter implements IExpressionVisitor
     /**
      * @return scalar|null
      */
-    public function visitUnaryExpression(UnaryExpression $unaryExpression): mixed
+    public function visitUnaryExpression(UnaryExpression $unaryExpression) : mixed
     {
         $right = $this->evaluate($unaryExpression->right);
 
@@ -168,9 +197,14 @@ class Interpreter implements IExpressionVisitor
     /**
      * @return scalar|null
      */
-    private function evaluate(Expression $expression): mixed
+    private function evaluate(Expression $expression)
     {
         return $expression->accept($this);
+    }
+
+    private function execute(Statement $statement) : void
+    {
+        $statement->accept($this);
     }
 
     /**
