@@ -42,6 +42,15 @@ class ASTGenerator
                 'right' => 'Expression'
             ]),
         ]));
+
+        $this->defineAST($outputDir, new TypeDefinitionCollection("Statement", [
+            new TypeDefinition('Expression', [], [
+                'expression' => 'Expression'
+            ]),
+            new TypeDefinition('Print', [], [
+                'expression' => 'Expression'
+            ])
+        ]));
     }
 
     private function defineAST(string $outputDir, TypeDefinitionCollection $typeDefinitionCollection)
