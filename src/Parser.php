@@ -258,9 +258,9 @@ class Parser
 
             switch ($this->peek()->type)
             {
-                case TokenType::CLASS_DEF:
-                case TokenType::FUN_DEF:
-                case TokenType::VAR_DEF:
+                case TokenType::CLASS_DECL:
+                case TokenType::FUN_DECL:
+                case TokenType::VAR_DECL:
                 case TokenType::FOR:
                 case TokenType::IF:
                 case TokenType::WHILE:

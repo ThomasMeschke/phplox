@@ -36,10 +36,10 @@ enum TokenType
 
     // keywords
     case AND;
-    case CLASS_DEF;
+    case CLASS_DECL;
     case ELSE;
     case FALSE;
-    case FUN_DEF;
+    case FUN_DECL;
     case FOR;
     case IF;
     case NIL;
@@ -49,7 +49,7 @@ enum TokenType
     case SUPER;
     case THIS;
     case TRUE;
-    case VAR_DEF;
+    case VAR_DECL;
     case WHILE;
 
     case EOF;
