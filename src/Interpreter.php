@@ -6,6 +6,7 @@ namespace thomas\phplox\src;
 
 use DivisionByZeroError;
 use Lox;
+use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
@@ -16,6 +17,8 @@ use thomas\phplox\src\ast\LiteralExpression;
 use thomas\phplox\src\ast\PrintStatement;
 use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
+use thomas\phplox\src\ast\VariableExpression;
+use thomas\phplox\src\ast\VarStatement;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 /**
@@ -24,6 +27,13 @@ use thomas\phplox\src\exceptions\RuntimeErrorException;
  */
 class Interpreter implements IExpressionVisitor, IStatementVisitor
 {
+    private Environment $environment;
+
+    public function __construct()
+    {
+        $this->environment = new Environment();
+    }
+
     /**
      * @param array<Statement> $statements
      */
@@ -59,6 +69,31 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         $value = $this->evaluate($printStatement->expression);
         echo $this->stringify($value) . PHP_EOL;
         return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function visitVarStatement(VarStatement $varStatement): mixed
+    {
+        $value = null;
+        if (null !== $varStatement->initializer)
+        {
+            $value = $this->evaluate($varStatement->initializer);
+        }
+
+        $this->environment->define($varStatement->name->lexeme, $value);
+        return null;
+    }
+
+    /**
+     * @return scalar|null
+     */
+    public function visitAssignmentExpression(AssignmentExpression $assignmentExpression): mixed
+    {
+        $value = $this->evaluate($assignmentExpression->value);
+        $this->environment->assign($assignmentExpression->name, $value);
+        return $value;
     }
 
     /**
@@ -163,6 +198,14 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
 
         // Unreachable
         return null;
+    }
+
+    /**
+     * @return scalar|null
+     */
+    public function visitVariableExpression(VariableExpression $variableExpression): mixed
+    {
+        return $this->environment->get($variableExpression->name);
     }
 
     /**

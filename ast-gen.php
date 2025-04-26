@@ -26,6 +26,10 @@ class ASTGenerator
 
         $outputDir = $argv[1];
         $this->defineAST($outputDir, new TypeDefinitionCollection("Expression", [
+            new TypeDefinition('Assignment', ['thomas\\phplox\\src\\Token'], [
+                'name' => 'Token',
+                'value' => 'Expression'
+            ]),
             new TypeDefinition('Binary', ['thomas\\phplox\\src\\Token'], [
                 'left' => 'Expression',
                 'operator' => 'Token',
@@ -41,6 +45,9 @@ class ASTGenerator
                 'operator' => 'Token',
                 'right' => 'Expression'
             ]),
+            new TypeDefinition('Variable', ['thomas\\phplox\\src\\Token'], [
+                'name' => 'Token'
+            ])
         ]));
 
         $this->defineAST($outputDir, new TypeDefinitionCollection("Statement", [
@@ -49,6 +56,10 @@ class ASTGenerator
             ]),
             new TypeDefinition('Print', [], [
                 'expression' => 'Expression'
+            ]),
+            new TypeDefinition('Var', ['thomas\\phplox\\src\\Token'], [
+                'name' => 'Token',
+                'initializer' => '?Expression'
             ])
         ]));
     }

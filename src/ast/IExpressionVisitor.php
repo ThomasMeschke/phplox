@@ -12,6 +12,10 @@ interface IExpressionVisitor
     /**
      * @return T
      */
+    function visitAssignmentExpression(AssignmentExpression $assignmentExpression) : mixed;
+    /**
+     * @return T
+     */
     function visitBinaryExpression(BinaryExpression $binaryExpression) : mixed;
     /**
      * @return T
@@ -25,4 +29,8 @@ interface IExpressionVisitor
      * @return T
      */
     function visitUnaryExpression(UnaryExpression $unaryExpression) : mixed;
+    /**
+     * @return T
+     */
+    function visitVariableExpression(VariableExpression $variableExpression) : mixed;
 }
