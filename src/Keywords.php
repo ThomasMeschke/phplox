@@ -11,10 +11,10 @@ class Keywords
      */
     private static array $keywords = [
         'and'       => TokenType::AND,
-        'class'     => TokenType::CLASS_DEF,
+        'class'     => TokenType::CLASS_DECL,
         'else'      => TokenType::ELSE,
         'false'     => TokenType::FALSE,
-        'fun'       => TokenType::FUN_DEF,
+        'fun'       => TokenType::FUN_DECL,
         'for'       => TokenType::FOR,
         'if'        => TokenType::IF,
         'nil'       => TokenType::NIL,
@@ -24,7 +24,7 @@ class Keywords
         'super'     => TokenType::SUPER,
         'this'      => TokenType::THIS,
         'true'      => TokenType::TRUE,
-        'var'       => TokenType::VAR_DEF,
+        'var'       => TokenType::VAR_DECL,
         'while'     => TokenType::WHILE,
     ];
 
