@@ -1,0 +1,11 @@
+var beverage = "capuccino";
+var a = 42;
+print a;
+
+a = 1337;
+print a;
+
+print "one";
+print true;
+print 2 + 1;
+print beverage;

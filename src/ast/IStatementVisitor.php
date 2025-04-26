@@ -17,4 +17,8 @@ interface IStatementVisitor
      * @return T
      */
     function visitPrintStatement(PrintStatement $printStatement) : mixed;
+    /**
+     * @return T
+     */
+    function visitVarStatement(VarStatement $varStatement) : mixed;
 }
