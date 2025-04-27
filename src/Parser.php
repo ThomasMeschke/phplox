@@ -7,6 +7,7 @@ namespace thomas\phplox\src;
 use Lox;
 use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
+use thomas\phplox\src\ast\BlockStatement;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
@@ -77,6 +78,11 @@ class Parser
             return $this->printStatement();
         }
 
+        if ($this->match(TokenType::LEFT_BRACE))
+        {
+            return new BlockStatement($this->blockStatement());
+        }
+
         return $this->expressionStatement();
     }
 
@@ -107,6 +113,26 @@ class Parser
         $expression = $this->expression();
         $this->consume(TokenType::SEMICOLON, "Expected ';' after expression.");
         return new ExpressionStatement($expression);
+    }
+
+    /**
+     * @return array<Statement>
+     */
+    private function blockStatement() : array
+    {
+        $statements = [];
+
+        while (! $this->check(TokenType::RIGHT_BRACE) && ! $this->isAtEnd())
+        {
+            $statement = $this->declaration();
+            if (null !== $statement)
+            {
+                $statements[] = $statement;
+            }
+        }
+
+        $this->consume(TokenType::RIGHT_BRACE, "Expected '}' after block.");
+        return $statements;
     }
 
     private function expression() : Expression

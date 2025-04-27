@@ -8,6 +8,7 @@ use DivisionByZeroError;
 use Lox;
 use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
+use thomas\phplox\src\ast\BlockStatement;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
@@ -58,6 +59,15 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     public function visitExpressionStatement(ExpressionStatement $expressionStatement) : mixed
     {
         $this->evaluate($expressionStatement->expression);
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function visitBlockStatement(BlockStatement $blockStatement): mixed
+    {
+        $this->executeBlock($blockStatement->statements, new Environment($this->environment));
         return null;
     }
 
@@ -248,6 +258,27 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     private function execute(Statement $statement) : void
     {
         $statement->accept($this);
+    }
+
+    /**
+     * @param array<Statement> $statements
+     */
+    private function executeBlock(array $statements, Environment $environment) : void
+    {
+        $previousEnvironment = $this->environment;
+        try
+        {
+            $this->environment = $environment;
+
+            foreach($statements as $statement)
+            {
+                $this->execute($statement);
+            }
+        }
+        finally
+        {
+            $this->environment = $previousEnvironment;
+        }
     }
 
     /**
