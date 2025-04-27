@@ -19,30 +19,6 @@ use thomas\phplox\src\ast\VarStatement;
 use thomas\phplox\src\exceptions\ParseException;
 use thomas\phplox\src\Token;
 
-/**
- * GRAMMAR:
- *  program        → declaration* EOF ;
- *  declaration    → varDecl
- *                 | statement ;
- *  statement      → exprStmt
- *                 | printStmt ;
- *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- *  exprStmt       → expression ";" ;
- *  printStmt      → "print" expression ";" ;
- *  expression     → assignment ;
- *  assignment     → IDENTIFIER "=" assignment
- *                 | equality;
- *  equality       → comparison ( ( "!=" | "==" ) comparison )* ;
- *  comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
- *  term           → factor ( ( "-" | "+" ) factor )* ;
- *  factor         → unary ( ( "/" | "*" ) unary )* ;
- *  unary          → ( "!" | "-" ) unary
- *                 | primary ;
- *  primary        → NUMBER | STRING | "true" | "false" | "nil"
- *                 | "(" expression ")"
- *                 | IDENTIFIER ;
- */
-
 class Parser
 {
     /** @var array<Token> $tokens */
