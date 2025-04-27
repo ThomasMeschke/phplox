@@ -8,8 +8,15 @@ use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 class Environment
 {
+    public ?Environment $enclosing;
+
     /** @var array<string, scalar|null> $values */
     private array $values = [];
+
+    public function __construct(?Environment $enclosing = null)
+    {
+        $this->enclosing = $enclosing;
+    }
 
     /**
      * @param scalar|null $value
@@ -30,6 +37,12 @@ class Environment
             return;
         }
 
+        if (null !== $this->enclosing)
+        {
+            $this->enclosing->assign($name, $value);
+            return;
+        }
+
         throw new RuntimeErrorException($name, "Undefined variable '{$name->lexeme}'.");
     }
 
@@ -41,6 +54,11 @@ class Environment
         if (array_key_exists($name->lexeme, $this->values))
         {
             return $this->values[$name->lexeme];
+        }
+
+        if (null !== $this->enclosing)
+        {
+            return $this->enclosing->get($name);
         }
 
         throw new RuntimeErrorException($name, "Undefined variable '{$name->lexeme}'.");
