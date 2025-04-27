@@ -12,6 +12,10 @@ interface IStatementVisitor
     /**
      * @return T
      */
+    function visitBlockStatement(BlockStatement $blockStatement) : mixed;
+    /**
+     * @return T
+     */
     function visitExpressionStatement(ExpressionStatement $expressionStatement) : mixed;
     /**
      * @return T

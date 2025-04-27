@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/vendor/autoload.php';
 
+use thomas\phplox\ast_gen\PropertyDefinition;
 use thomas\phplox\ast_gen\TypeDefinition;
 use thomas\phplox\ast_gen\TypeDefinitionCollection;
 
@@ -27,39 +28,42 @@ class ASTGenerator
         $outputDir = $argv[1];
         $this->defineAST($outputDir, new TypeDefinitionCollection("Expression", [
             new TypeDefinition('Assignment', ['thomas\\phplox\\src\\Token'], [
-                'name' => 'Token',
-                'value' => 'Expression'
+                new PropertyDefinition('name', 'Token'),
+                new PropertyDefinition('value', 'Expression')
             ]),
             new TypeDefinition('Binary', ['thomas\\phplox\\src\\Token'], [
-                'left' => 'Expression',
-                'operator' => 'Token',
-                'right' => 'Expression'
+                new PropertyDefinition('left', 'Expression'),
+                new PropertyDefinition('operator', 'Token'),
+                new PropertyDefinition('right', 'Expression')
             ]),
             new TypeDefinition('Grouping', [], [
-                'expression' => 'Expression'
+                new PropertyDefinition('expression', 'Expression')
             ]),
             new TypeDefinition('Literal', [], [
-                'value' => 'mixed'
+                new PropertyDefinition('value', 'mixed', 'scalar|null')
             ]),
             new TypeDefinition('Unary', ['thomas\\phplox\\src\\Token'], [
-                'operator' => 'Token',
-                'right' => 'Expression'
+                new PropertyDefinition('operator', 'Token'),
+                new PropertyDefinition('right', 'Expression')
             ]),
             new TypeDefinition('Variable', ['thomas\\phplox\\src\\Token'], [
-                'name' => 'Token'
+                new PropertyDefinition('name', 'Token')
             ])
         ]));
 
         $this->defineAST($outputDir, new TypeDefinitionCollection("Statement", [
+            new TypeDefinition('Block', [], [
+                new PropertyDefinition('statements', 'array', 'array<Statement>')
+            ]),
             new TypeDefinition('Expression', [], [
-                'expression' => 'Expression'
+                new PropertyDefinition('expression', 'Expression')
             ]),
             new TypeDefinition('Print', [], [
-                'expression' => 'Expression'
+                new PropertyDefinition('expression', 'Expression')
             ]),
             new TypeDefinition('Var', ['thomas\\phplox\\src\\Token'], [
-                'name' => 'Token',
-                'initializer' => '?Expression'
+                new PropertyDefinition('name', 'Token'),
+                new PropertyDefinition('initializer', '?Expression')
             ])
         ]));
     }
