@@ -9,18 +9,18 @@ class TypeDefinition
     public string $typeName = "";
     /** @var array<string> $dependencies */
     public array $dependencies = [];
-    /** @var array<string, string> $fields */
-    public array $fields = [];
+    /** @var array<PropertyDefinition> $properties */
+    public array $properties = [];
 
     /**
      * @param array<string> $dependencies
-     * @param array<string, string> $fields
+     * @param array<PropertyDefinition> $properties
      */
-    public function __construct(string $typeName, array $dependencies, array $fields)
+    public function __construct(string $typeName, array $dependencies, array $properties)
     {
         $this->typeName = $typeName;
         $this->dependencies = $dependencies;
-        $this->fields = $fields;
+        $this->properties = $properties;
     }
 
     public function constructorSignature() : string
@@ -28,13 +28,13 @@ class TypeDefinition
         $signature = '    public function __construct(';
         $params = [];
         $docLines = [];
-        foreach($this->fields as $name => $type)
+        foreach($this->properties as $property)
         {
-            if ($type === 'mixed')
+            if (null !== $property->stanTypeName)
             {
-                $docLines[] = "     * @param scalar|null \${$name}";
+                $docLines[] = "     * @param {$property->stanTypeName} \${$property->name}";
             }
-            $params[] = "{$type} \${$name}";
+            $params[] = "{$property->typeName} \${$property->name}";
         }
         $signature .= join(', ', $params);
         $signature .= ')';
@@ -56,25 +56,25 @@ class TypeDefinition
 
     public function fieldList() : string
     {
-        $fields = [];
-        foreach($this->fields as $name => $type)
+        $properties = [];
+        foreach($this->properties as $property)
         {
-            if ($type === 'mixed')
+            if (null !== $property->stanTypeName)
             {
-                $fields[] = "    /** @var scalar|null \${$name} */";
+                $properties[] = "    /** @var {$property->stanTypeName} \${$property->name} */";
             }
-            $fields[] = "    public {$type} \${$name};";
+            $properties[] = "    public {$property->typeName} \${$property->name};";
         }
 
-        return join(PHP_EOL, $fields);
+        return join(PHP_EOL, $properties);
     }
 
     public function assignmentList() : string
     {
         $assignments = [];
-        foreach(array_keys($this->fields) as $name)
+        foreach($this->properties as $property)
         {
-            $assignments[] = "        \$this->{$name} = \${$name};";
+            $assignments[] = "        \$this->{$property->name} = \${$property->name};";
         }
 
         return join(PHP_EOL, $assignments);
