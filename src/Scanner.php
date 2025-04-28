@@ -82,10 +82,10 @@ class Scanner
 
             case ' ':
             case chr(9):    // <-- horizontal tab
-            case chr(10):   // <-- line feed
+            case chr(13):   // <-- cariage return
                 break;
 
-            case chr(13):   // <-- cariage return
+            case chr(10):   // <-- line feed
                 $this->line++;
                 break;
 
