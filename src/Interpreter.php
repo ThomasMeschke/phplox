@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace thomas\phplox\src;
 
 use DivisionByZeroError;
+use LogicException;
 use Lox;
 use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
@@ -13,13 +14,16 @@ use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
 use thomas\phplox\src\ast\IExpressionVisitor;
+use thomas\phplox\src\ast\IfStatement;
 use thomas\phplox\src\ast\IStatementVisitor;
 use thomas\phplox\src\ast\LiteralExpression;
+use thomas\phplox\src\ast\LogicalExpression;
 use thomas\phplox\src\ast\PrintStatement;
 use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\ast\VariableExpression;
 use thomas\phplox\src\ast\VarStatement;
+use thomas\phplox\src\ast\WhileStatement;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 /**
@@ -65,6 +69,23 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     /**
      * @return null
      */
+    public function visitIfStatement(IfStatement $ifStatement): mixed
+    {
+        if ($this->isTruthy($this->evaluate($ifStatement->condition)))
+        {
+            $this->execute($ifStatement->thenBranch);
+        }
+        else if (null !== $ifStatement->elseBranch)
+        {
+            $this->execute($ifStatement->elseBranch);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return null
+     */
     public function visitBlockStatement(BlockStatement $blockStatement): mixed
     {
         $this->executeBlock($blockStatement->statements, new Environment($this->environment));
@@ -78,6 +99,19 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     {
         $value = $this->evaluate($printStatement->expression);
         echo $this->stringify($value) . PHP_EOL;
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function visitWhileStatement(WhileStatement $whileStatement): mixed
+    {
+        while ($this->isTruthy($this->evaluate($whileStatement->condition)))
+        {
+            $this->execute($whileStatement->body);
+        }
+
         return null;
     }
 
@@ -188,6 +222,36 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     public function visitLiteralExpression(LiteralExpression $literalExpression) : mixed
     {
         return $literalExpression->value;
+    }
+
+    /**
+     * @return scalar|null
+     */
+    public function visitLogicalExpression(LogicalExpression $logicalExpression) : mixed
+    {
+        $left = $this->evaluate($logicalExpression->left);
+
+        if ($logicalExpression->operator->type == TokenType::OR)
+        {
+            // short-circuit in the case of OR:
+            // if the left-hand-side is already truthy,
+            // there is no need to evaluate the right hand side
+            if ($this->isTruthy($left)) return $left;
+        }
+        else
+        {
+            // short-circuit in the case of AND:
+            // if the left-hand-side is already falsy,
+            // there is no need to evaluate the right hand side
+            if (! $this->isTruthy($left)) return $left;
+        }
+
+        // if we are here, we either have
+        // a falsy LHS and a logical OR,
+        // or we have
+        // a truthy LHS and a logical AND.
+        // Either way, the RHS determines the outcome.
+        return $this->evaluate($logicalExpression->right);
     }
 
     /**

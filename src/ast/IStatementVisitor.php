@@ -20,7 +20,15 @@ interface IStatementVisitor
     /**
      * @return T
      */
+    function visitIfStatement(IfStatement $ifStatement) : mixed;
+    /**
+     * @return T
+     */
     function visitPrintStatement(PrintStatement $printStatement) : mixed;
+    /**
+     * @return T
+     */
+    function visitWhileStatement(WhileStatement $whileStatement) : mixed;
     /**
      * @return T
      */

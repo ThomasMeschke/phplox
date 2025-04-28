@@ -42,6 +42,11 @@ class ASTGenerator
             new TypeDefinition('Literal', [], [
                 new PropertyDefinition('value', 'mixed', 'scalar|null')
             ]),
+            new TypeDefinition('Logical', ['\\thomas\\phplox\\src\\Token'], [
+                new PropertyDefinition('left', 'Expression'),
+                new PropertyDefinition('operator', 'Token'),
+                new PropertyDefinition('right', 'Expression')
+            ]),
             new TypeDefinition('Unary', ['thomas\\phplox\\src\\Token'], [
                 new PropertyDefinition('operator', 'Token'),
                 new PropertyDefinition('right', 'Expression')
@@ -58,8 +63,17 @@ class ASTGenerator
             new TypeDefinition('Expression', [], [
                 new PropertyDefinition('expression', 'Expression')
             ]),
+            new TypeDefinition('If', [], [
+                new PropertyDefinition('condition', 'Expression'),
+                new PropertyDefinition('thenBranch', 'Statement'),
+                new PropertyDefinition('elseBranch', '?Statement')
+            ]),
             new TypeDefinition('Print', [], [
                 new PropertyDefinition('expression', 'Expression')
+            ]),
+            new TypeDefinition('While', [], [
+                new PropertyDefinition('condition', 'Expression'),
+                new PropertyDefinition('body', 'Statement')
             ]),
             new TypeDefinition('Var', ['thomas\\phplox\\src\\Token'], [
                 new PropertyDefinition('name', 'Token'),

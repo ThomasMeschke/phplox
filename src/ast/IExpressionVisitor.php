@@ -28,6 +28,10 @@ interface IExpressionVisitor
     /**
      * @return T
      */
+    function visitLogicalExpression(LogicalExpression $logicalExpression) : mixed;
+    /**
+     * @return T
+     */
     function visitUnaryExpression(UnaryExpression $unaryExpression) : mixed;
     /**
      * @return T
