@@ -171,13 +171,13 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
                 {
                     return (double)$left + (double)$right;
                 }
-                if (is_string($left) && is_string($right))
+                if (is_string($left) || is_string($right))
                 {
-                    return "{$left}{$right}";
+                    return $this->stringify($left) . $this->stringify($right);
                 }
                 throw new RuntimeErrorException(
                     $binaryExpression->operator,
-                    "Operands must be two numbers or two strings."
+                    "Operands must be two numbers or at least one string."
                 );
             case TokenType::SLASH:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
