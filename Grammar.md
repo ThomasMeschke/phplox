@@ -1,6 +1,6 @@
 # Grammar of Lox
 
-```
+```text
 program         → declaration* EOF ;
 declaration     → varDecl
                 | statement ;
