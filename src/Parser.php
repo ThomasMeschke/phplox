@@ -9,13 +9,16 @@ use Lox;
 use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\BlockStatement;
+use thomas\phplox\src\ast\CallExpression;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
+use thomas\phplox\src\ast\FunctionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
 use thomas\phplox\src\ast\IfStatement;
 use thomas\phplox\src\ast\LiteralExpression;
 use thomas\phplox\src\ast\LogicalExpression;
 use thomas\phplox\src\ast\PrintStatement;
+use thomas\phplox\src\ast\ReturnStatement;
 use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\ast\VariableExpression;
@@ -62,6 +65,10 @@ class Parser
     {
         try
         {
+            if ($this->match(TokenType::FUN_DECL))
+            {
+                return $this->function(FunctionType::FUNCTION);
+            }
             if ($this->match(TokenType::VAR_DECL))
             {
                 return $this->varDeclaration();
@@ -73,6 +80,50 @@ class Parser
             $this->synchronize();
             return null;
         }
+    }
+
+    private function function(FunctionType $functionType) : Statement
+    {
+        $functionTypeString = $functionType->value;
+        $name = $this->consume(TokenType::IDENTIFIER, "{$functionTypeString} name expected.");
+
+        $this->consume(TokenType::LEFT_PAREN, "Expected '(' after {$functionTypeString} name.");
+
+        /** @var array<Token> $parameters */
+        $parameters =[];
+        if (! $this->check(TokenType::RIGHT_PAREN))
+        {
+            do {
+                if (count($parameters) >= 255)
+                {
+                    $this->error($this->peek(), "Can't have more than 255 parameters.");
+                }
+
+                $parameters[] = $this->consume(TokenType::IDENTIFIER, "Parameter name expected.");
+            } while ($this->match(TokenType::COMMA));
+        }
+
+        $this->consume(TokenType::RIGHT_PAREN, "Expected ')' after parameters");
+        $this->consume(TokenType::LEFT_BRACE, "Expetced '{' before {$functionTypeString} body.");
+
+        $body = $this->blockStatement();
+
+        return new FunctionStatement($name, $parameters, $body);
+    }
+
+    private function varDeclaration() : Statement
+    {
+        $name = $this->consume(TokenType::IDENTIFIER, 'Identifier expected.');
+
+        $initializer = null;
+        if ($this->match(TokenType::EQUAL))
+        {
+            $initializer = $this->expression();
+        }
+
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
+
+        return new VarStatement($name, $initializer);
     }
 
     private function statement() : Statement
@@ -88,6 +139,10 @@ class Parser
         if ($this->match(TokenType::PRINT))
         {
             return $this->printStatement();
+        }
+        if ($this->match(TokenType::RETURN))
+        {
+            return $this->returnStatement();
         }
         if ($this->match(TokenType::WHILE))
         {
@@ -187,6 +242,20 @@ class Parser
         return new PrintStatement($value);
     }
 
+    private function returnStatement() : Statement
+    {
+        $keyword = $this->previous();
+        $value = NULL;
+        if (! $this->check(TokenType::SEMICOLON))
+        {
+            $value = $this->expression();
+        }
+
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after return value.");
+
+        return new ReturnStatement($keyword, $value);
+    }
+
     private function whileStatement() : Statement
     {
         $this->consume(TokenType::LEFT_PAREN, "Expected '(' after 'while'.");
@@ -196,21 +265,6 @@ class Parser
         $body = $this->statement();
 
         return new WhileStatement($condition, $body);
-    }
-
-    private function varDeclaration() : Statement
-    {
-        $name = $this->consume(TokenType::IDENTIFIER, 'Identifier expected.');
-
-        $initializer = null;
-        if ($this->match(TokenType::EQUAL))
-        {
-            $initializer = $this->expression();
-        }
-
-        $this->consume(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
-
-        return new VarStatement($name, $initializer);
     }
 
     private function expressionStatement() : Statement
@@ -366,7 +420,48 @@ class Parser
             return new UnaryExpression($operator, $right);
         }
 
-        return $this->primary();
+        return $this->call();
+    }
+
+    private function call(): Expression
+    {
+        $expression = $this->primary();
+
+        while(true)
+        {
+            if($this->match(TokenType::LEFT_PAREN))
+            {
+                $expression = $this->finishCall($expression);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return $expression;
+    }
+
+    private function finishCall(Expression $callee): Expression
+    {
+        /** @var array<Expression> $arguments */
+        $arguments = [];
+
+        if (! $this->check(TokenType::RIGHT_PAREN))
+        {
+            do
+            {
+                if (count($arguments) >= 255)
+                {
+                    $this->error($this->peek(), "Can't have more than 255 arguments.");
+                }
+                $arguments[] = $this->expression();
+            } while($this->match(TokenType::COMMA));
+        }
+
+        $paren = $this->consume(TokenType::RIGHT_PAREN, "Expected ')' after arguments.");
+
+        return new CallExpression($callee, $paren, $arguments);
     }
 
     private function primary() : Expression

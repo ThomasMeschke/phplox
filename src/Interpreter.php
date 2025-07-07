@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace thomas\phplox\src;
 
 use DivisionByZeroError;
-use LogicException;
 use Lox;
 use thomas\phplox\src\ast\AssignmentExpression;
 use thomas\phplox\src\ast\BinaryExpression;
 use thomas\phplox\src\ast\BlockStatement;
+use thomas\phplox\src\ast\CallExpression;
 use thomas\phplox\src\ast\Expression;
 use thomas\phplox\src\ast\ExpressionStatement;
+use thomas\phplox\src\ast\FunctionStatement;
 use thomas\phplox\src\ast\GroupingExpression;
 use thomas\phplox\src\ast\IExpressionVisitor;
 use thomas\phplox\src\ast\IfStatement;
@@ -19,24 +20,54 @@ use thomas\phplox\src\ast\IStatementVisitor;
 use thomas\phplox\src\ast\LiteralExpression;
 use thomas\phplox\src\ast\LogicalExpression;
 use thomas\phplox\src\ast\PrintStatement;
+use thomas\phplox\src\ast\ReturnStatement;
 use thomas\phplox\src\ast\Statement;
 use thomas\phplox\src\ast\UnaryExpression;
 use thomas\phplox\src\ast\VariableExpression;
 use thomas\phplox\src\ast\VarStatement;
 use thomas\phplox\src\ast\WhileStatement;
+use thomas\phplox\src\exceptions\ReturnException;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 
 /**
- * @implements IExpressionVisitor<scalar|null>
+ * @implements IExpressionVisitor<mixed>
  * @implements IStatementVisitor<null>
  */
 class Interpreter implements IExpressionVisitor, IStatementVisitor
 {
+    public readonly Environment $globals;
+
+    /**
+     * @var array<string, int> $locals
+     */
+    private array $locals;
     private Environment $environment;
 
     public function __construct()
     {
-        $this->environment = new Environment();
+        $this->globals = new Environment();
+        $this->locals = [];
+        $this->environment = $this->globals;
+
+        $this->globals->define("clock", new class implements LoxCallable {
+            public function arity(): int
+            {
+                return 0;
+            }
+
+            /**
+             * @param array<mixed> $arguments
+             */
+            public function call(Interpreter $interpreter, array $arguments) : mixed
+            {
+                return gettimeofday(as_float: TRUE);
+            }
+
+            public function __toString()
+            {
+                return "<native fn>";
+            }
+        });
     }
 
     /**
@@ -55,6 +86,11 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         {
             Lox::runtimeError($error);
         }
+    }
+
+    public function resolve(Expression $expression, int $depth): void
+    {
+        $this->locals[spl_object_hash($expression)] = $depth;
     }
 
     /**
@@ -105,6 +141,20 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     /**
      * @return null
      */
+    public function visitReturnStatement(ReturnStatement $returnStatement): mixed
+    {
+        $value = null;
+        if ($returnStatement->value !== null)
+        {
+            $value = $this->evaluate($returnStatement->value);
+        }
+
+        throw new ReturnException($value);
+    }
+
+    /**
+     * @return null
+     */
     public function visitWhileStatement(WhileStatement $whileStatement): mixed
     {
         while ($this->isTruthy($this->evaluate($whileStatement->condition)))
@@ -112,6 +162,16 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
             $this->execute($whileStatement->body);
         }
 
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function visitFunctionStatement(FunctionStatement $functionStatement): mixed
+    {
+        $function = new LoxFunction($functionStatement, $this->environment);
+        $this->environment->define($functionStatement->name->lexeme, $function);
         return null;
     }
 
@@ -130,19 +190,23 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         return null;
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitAssignmentExpression(AssignmentExpression $assignmentExpression): mixed
     {
         $value = $this->evaluate($assignmentExpression->value);
-        $this->environment->assign($assignmentExpression->name, $value);
+
+        $distance = $this->locals[spl_object_hash($assignmentExpression)] ?? null;
+        if ($distance !== null)
+        {
+            $this->environment->assignAt($distance, $assignmentExpression->name, $value);
+        }
+        else
+        {
+            $this->globals->assign($assignmentExpression->name, $value);
+        }
+
         return $value;
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitBinaryExpression(BinaryExpression $binaryExpression) : mixed
     {
         $left = $this->evaluate($binaryExpression->left);
@@ -152,23 +216,35 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         {
             case TokenType::GREATER:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 return (double)$left > (double)$right;
             case TokenType::GREATER_EQUAL:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 return (double)$left >= (double)$right;
             case TokenType::LESS:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 return (double)$left < (double)$right;
             case TokenType::LESS_EQUAL:
+                /** @var numeric $left */
+                /** @var numeric $right */
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
                 return (double)$left <= (double)$right;
 
             case TokenType::MINUS:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 return (double)$left - (double)$right;
             case TokenType::PLUS:
                 if (is_numeric($left) && is_numeric($right))
                 {
+                    /** @var numeric $left */
+                    /** @var numeric $right */
                     return (double)$left + (double)$right;
                 }
                 if (is_string($left) || is_string($right))
@@ -181,6 +257,8 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
                 );
             case TokenType::SLASH:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 try
                 {
                     return (double)$left / (double)$right;
@@ -196,6 +274,8 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
                 }
             case TokenType::STAR:
                 $this->checkNumberOperands($binaryExpression->operator, $left, $right);
+                /** @var numeric $left */
+                /** @var numeric $right */
                 return (double)$left * (double)$right;
 
             case TokenType::BANG_EQUAL:
@@ -208,25 +288,46 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         return null;
     }
 
-    /**
-     * @return scalar|null
-     */
+    public function visitCallExpression(CallExpression $callExpression): mixed
+    {
+        $callee = $this->evaluate($callExpression->callee);
+
+        $arguments = [];
+        foreach($callExpression->arguments as $argument)
+        {
+            $arguments[] = $this->evaluate($argument);
+        }
+
+        if (! ($callee instanceof LoxCallable))
+        {
+            throw new RuntimeErrorException($callExpression->paren, "Can only call functions and classes.");
+        }
+
+        /** @var LoxCallable $function */
+        $function = $callee;
+        $expectedArgumentCount = $function->arity();
+        $actualArgumentCount = count($arguments);
+        if ($actualArgumentCount !== $expectedArgumentCount)
+        {
+            throw new RuntimeErrorException(
+                $callExpression->paren,
+                "Expected {$expectedArgumentCount} arguments but got {$actualArgumentCount}."
+            );
+        }
+
+        return $function->call($this, $arguments);
+    }
+
     public function visitGroupingExpression(GroupingExpression $groupingExpression) : mixed
     {
         return $this->evaluate($groupingExpression->expression);
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitLiteralExpression(LiteralExpression $literalExpression) : mixed
     {
         return $literalExpression->value;
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitLogicalExpression(LogicalExpression $logicalExpression) : mixed
     {
         $left = $this->evaluate($logicalExpression->left);
@@ -254,9 +355,6 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         return $this->evaluate($logicalExpression->right);
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitUnaryExpression(UnaryExpression $unaryExpression) : mixed
     {
         $right = $this->evaluate($unaryExpression->right);
@@ -267,6 +365,7 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
                 return ! $this->isTruthy($right);
             case TokenType::MINUS:
                 $this->checkNumberOperand($unaryExpression->operator, $right);
+                /** @var numeric $right */
                 return -(double)$right;
         }
 
@@ -274,27 +373,17 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         return null;
     }
 
-    /**
-     * @return scalar|null
-     */
     public function visitVariableExpression(VariableExpression $variableExpression): mixed
     {
-        return $this->environment->get($variableExpression->name);
+        return $this->lookUpVariable($variableExpression->name, $variableExpression);
     }
 
-    /**
-     * @param scalar|null $operand
-     */
     public function checkNumberOperand(Token $operator, mixed $operand): void
     {
         if (is_numeric($operand)) return;
         throw new RuntimeErrorException($operator, "Operand must be a number.");
     }
 
-    /**
-     * @param scalar|null $left
-     * @param scalar|null $right
-     */
     public function checkNumberOperands(Token $operator, mixed $left, mixed $right): void
     {
         if (is_numeric($left) && is_numeric($right)) return;
@@ -302,32 +391,9 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
     }
 
     /**
-     * @param scalar|null $object
-     */
-    private function isTruthy(mixed $object) : bool
-    {
-        if ($object === null) return false;
-        if (is_bool($object)) return $object;
-        return true;
-    }
-
-    /**
-     * @return scalar|null
-     */
-    private function evaluate(Expression $expression)
-    {
-        return $expression->accept($this);
-    }
-
-    private function execute(Statement $statement) : void
-    {
-        $statement->accept($this);
-    }
-
-    /**
      * @param array<Statement> $statements
      */
-    private function executeBlock(array $statements, Environment $environment) : void
+    public function executeBlock(array $statements, Environment $environment) : void
     {
         $previousEnvironment = $this->environment;
         try
@@ -345,13 +411,46 @@ class Interpreter implements IExpressionVisitor, IStatementVisitor
         }
     }
 
-    /**
-     * @param scalar|null $value
-     */
+    private function isTruthy(mixed $object) : bool
+    {
+        if ($object === null) return false;
+        if (is_bool($object)) return $object;
+        return true;
+    }
+
+    private function evaluate(Expression $expression) : mixed
+    {
+        return $expression->accept($this);
+    }
+
+    private function execute(Statement $statement) : void
+    {
+        $statement->accept($this);
+    }
+
+    private function lookUpVariable(Token $name, Expression $expression): mixed
+    {
+        $distance = $this->locals[spl_object_hash($expression)] ?? null;
+        if ($distance !== null)
+        {
+            return $this->environment->getAt($distance, $name->lexeme);
+        }
+
+        return $this->globals->get($name);
+    }
+
     private function stringify(mixed $value) : string
     {
         if ($value === null) return "nil";
         if (is_bool($value)) return $value ? "true" : "false";
-        return (string)$value;
+
+        /**
+         * $value is also allowed to be an object
+         * implementing the __toString() method here.
+         * I just don't have no clue how to type-hint this...
+         **/
+
+        /** @var resource|scalar $value */
+        return strval($value);
     }
 }

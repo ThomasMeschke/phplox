@@ -20,6 +20,10 @@ interface IExpressionVisitor
     /**
      * @return T
      */
+    function visitCallExpression(CallExpression $callExpression) : mixed;
+    /**
+     * @return T
+     */
     function visitGroupingExpression(GroupingExpression $groupingExpression) : mixed;
     /**
      * @return T

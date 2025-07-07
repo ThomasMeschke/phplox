@@ -1,20 +1,10 @@
-var a = 0;
-var temp;
-var idx = 1;
-
-for (var b = 1; a < 10000; b = temp + b) {
-  var suffix = "th";
-  if ( idx == 1 or idx == 21 ) {
-    suffix = "st";
-  } else if ( idx == 2 ) {
-    suffix = "nd";
-  } else if (idx == 3) {
-    suffix = "rd";
+var a = "global";
+{
+  fun showA() {
+    print a;
   }
 
-  print "The " + idx + suffix + " fibonacci number is " + a;
-
-  temp = a;
-  a = b;
-  idx = idx + 1;
+  showA();
+  var a = "block";
+  showA();
 }

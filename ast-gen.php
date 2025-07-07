@@ -6,6 +6,7 @@ require __DIR__ . '/vendor/autoload.php';
 use thomas\phplox\ast_gen\PropertyDefinition;
 use thomas\phplox\ast_gen\TypeDefinition;
 use thomas\phplox\ast_gen\TypeDefinitionCollection;
+use thomas\phplox\src\TokenType;
 
 new ASTGenerator($argc, $argv);
 
@@ -36,6 +37,11 @@ class ASTGenerator
                 new PropertyDefinition('operator', 'Token'),
                 new PropertyDefinition('right', 'Expression')
             ]),
+            new TypeDefinition('Call', ['thomas\\phplox\\src\\Token'], [
+                new PropertyDefinition('callee', 'Expression'),
+                new PropertyDefinition('paren', 'Token'),
+                new PropertyDefinition('arguments', 'array', 'array<Expression>')
+            ]),
             new TypeDefinition('Grouping', [], [
                 new PropertyDefinition('expression', 'Expression')
             ]),
@@ -63,6 +69,11 @@ class ASTGenerator
             new TypeDefinition('Expression', [], [
                 new PropertyDefinition('expression', 'Expression')
             ]),
+            new TypeDefinition('Function', ['thomas\\phplox\\src\\Token'], [
+                new PropertyDefinition('name', 'Token'),
+                new PropertyDefinition('parameters', 'array', 'array<Token>'),
+                new PropertyDefinition('body', 'array', 'array<Statement>')
+            ]),
             new TypeDefinition('If', [], [
                 new PropertyDefinition('condition', 'Expression'),
                 new PropertyDefinition('thenBranch', 'Statement'),
@@ -70,6 +81,10 @@ class ASTGenerator
             ]),
             new TypeDefinition('Print', [], [
                 new PropertyDefinition('expression', 'Expression')
+            ]),
+            new TypeDefinition('Return', ['thomas\\phplox\\src\\Token'], [
+                new PropertyDefinition('keyword', 'Token'),
+                new PropertyDefinition('value', '?Expression')
             ]),
             new TypeDefinition('While', [], [
                 new PropertyDefinition('condition', 'Expression'),

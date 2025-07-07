@@ -10,7 +10,7 @@ class Environment
 {
     public ?Environment $enclosing;
 
-    /** @var array<string, scalar|null> $values */
+    /** @var array<mixed> $values */
     private array $values = [];
 
     public function __construct(?Environment $enclosing = null)
@@ -18,17 +18,11 @@ class Environment
         $this->enclosing = $enclosing;
     }
 
-    /**
-     * @param scalar|null $value
-     */
     public function define(string $name, mixed $value) : void
     {
         $this->values[$name] = $value;
     }
 
-    /**
-     * @param scalar|null $value;
-     */
     public function assign(Token $name, mixed $value) : void
     {
         if (array_key_exists($name->lexeme, $this->values))
@@ -46,9 +40,6 @@ class Environment
         throw new RuntimeErrorException($name, "Undefined variable '{$name->lexeme}'.");
     }
 
-    /**
-     * @return scalar|null
-     */
     public function get(Token $name) : mixed
     {
         if (array_key_exists($name->lexeme, $this->values))
@@ -62,5 +53,27 @@ class Environment
         }
 
         throw new RuntimeErrorException($name, "Undefined variable '{$name->lexeme}'.");
+    }
+
+    public function assignAt(int $distance, Token $name, mixed $value) : void
+    {
+        $this->ancestor($distance)->values[$name->lexeme] = $value;
+    }
+
+    public function getAt(int $distance, string $name) : mixed
+    {
+        return $this->ancestor($distance)->values[$name];
+    }
+
+    public function ancestor(int $distance) : Environment
+    {
+        $environment = $this;
+        for($i = 0; $i < $distance; $i++)
+        {
+            /** @var Environment $environment */
+            $environment = $environment->enclosing;
+        }
+
+        return $environment;
     }
 }

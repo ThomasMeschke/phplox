@@ -7,6 +7,7 @@ use thomas\phplox\src\AstPrinter;
 use thomas\phplox\src\exceptions\RuntimeErrorException;
 use thomas\phplox\src\Interpreter;
 use thomas\phplox\src\Parser;
+use thomas\phplox\src\Resolver;
 use thomas\phplox\src\Scanner;
 use thomas\phplox\src\Token;
 use thomas\phplox\src\TokenType;
@@ -86,6 +87,11 @@ class Lox
 
         $parser = new Parser($tokens);
         $statements = $parser->parse();
+
+        if (self::$hadError) return;
+
+        $resolver = new Resolver(self::$interpreter);
+        $resolver->resolveStatements($statements);
 
         if (self::$hadError) return;
 
